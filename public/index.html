@@ -1,1 +1,935 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Imaginary AI Generator</title>
+<meta name="theme-color" content="#05050c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #05050c; --panel: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.1); --text: #f1f5f9;
+    --muted: #94a3b8; --accent1: #a855f7; --accent2: #6366f1; --accent3: #ec4899;
+  }
+  body.light {
+    --bg: #dde3ff; --panel: rgba(255,255,255,0.7);
+    --border: rgba(0,0,0,0.08); --text: #1e1e2e; --muted: #64748b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    padding: 32px 20px; padding-top: max(32px, env(safe-area-inset-top));
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    display: flex; justify-content: center; position: relative;
+    overflow-x: hidden; transition: background .4s, color .4s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .space-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background: radial-gradient(ellipse at 20% 10%, rgba(168,85,247,0.45), transparent 55%),
+                radial-gradient(ellipse at 85% 90%, rgba(99,102,241,0.45), transparent 55%),
+                radial-gradient(ellipse at 60% 40%, rgba(236,72,153,0.3), transparent 60%);
+  }
+  body.light .space-bg {
+    background: radial-gradient(ellipse at 20% 10%, rgba(168,85,247,0.35), transparent 55%),
+                radial-gradient(ellipse at 85% 90%, rgba(99,102,241,0.35), transparent 55%),
+                radial-gradient(ellipse at 60% 40%, rgba(236,72,153,0.25), transparent 60%);
+  }
+  .stars, .stars2, .stars3 { position: absolute; inset: -50%; background-repeat: repeat; }
+  .stars {
+    background-image:
+      radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+      radial-gradient(2px 2px at 80px 120px, rgba(255,255,255,0.95), transparent),
+      radial-gradient(2.5px 2.5px at 160px 60px, #fff, transparent),
+      radial-gradient(2px 2px at 240px 180px, rgba(255,255,255,0.9), transparent),
+      radial-gradient(2px 2px at 300px 40px, #fff, transparent),
+      radial-gradient(2.5px 2.5px at 360px 220px, #fff, transparent),
+      radial-gradient(2px 2px at 420px 100px, #fff, transparent);
+    background-size: 480px 300px; animation: drift 120s linear infinite, twinkle 3s ease-in-out infinite;
+  }
+  .stars2 {
+    background-image:
+      radial-gradient(1.5px 1.5px at 50px 80px, rgba(200,220,255,1), transparent),
+      radial-gradient(2px 2px at 140px 200px, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 250px 30px, rgba(255,220,255,0.95), transparent),
+      radial-gradient(1.5px 1.5px at 340px 160px, #fff, transparent),
+      radial-gradient(2px 2px at 430px 90px, rgba(200,220,255,1), transparent);
+    background-size: 520px 340px; animation: drift 200s linear infinite reverse; opacity: 0.85;
+  }
+  .stars3 {
+    background-image:
+      radial-gradient(1.5px 1.5px at 100px 50px, rgba(255,255,255,0.9), transparent),
+      radial-gradient(1.5px 1.5px at 220px 140px, rgba(255,255,255,0.8), transparent),
+      radial-gradient(2px 2px at 320px 210px, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 400px 70px, rgba(255,255,255,0.7), transparent);
+    background-size: 460px 280px; animation: drift 300s linear infinite; opacity: 0.7;
+  }
+  body.light .stars {
+    background-image:
+      radial-gradient(2px 2px at 20px 30px, #4f46e5, transparent),
+      radial-gradient(2px 2px at 80px 120px, rgba(79,70,229,0.85), transparent),
+      radial-gradient(2.5px 2.5px at 160px 60px, #7c3aed, transparent),
+      radial-gradient(2px 2px at 240px 180px, rgba(99,102,241,0.9), transparent),
+      radial-gradient(2px 2px at 300px 40px, #4f46e5, transparent),
+      radial-gradient(2.5px 2.5px at 360px 220px, #8b5cf6, transparent),
+      radial-gradient(2px 2px at 420px 100px, #6366f1, transparent);
+  }
+  body.light .stars2 {
+    background-image:
+      radial-gradient(1.5px 1.5px at 50px 80px, rgba(99,102,241,0.9), transparent),
+      radial-gradient(2px 2px at 140px 200px, #7c3aed, transparent),
+      radial-gradient(1.5px 1.5px at 250px 30px, rgba(139,92,246,0.9), transparent),
+      radial-gradient(1.5px 1.5px at 340px 160px, #6366f1, transparent),
+      radial-gradient(2px 2px at 430px 90px, rgba(99,102,241,0.9), transparent);
+  }
+  body.light .stars3 {
+    background-image:
+      radial-gradient(1.5px 1.5px at 100px 50px, rgba(124,58,237,0.7), transparent),
+      radial-gradient(1.5px 1.5px at 220px 140px, rgba(99,102,241,0.6), transparent),
+      radial-gradient(2px 2px at 320px 210px, #7c3aed, transparent),
+      radial-gradient(1.5px 1.5px at 400px 70px, rgba(139,92,246,0.5), transparent);
+  }
+  @keyframes drift { from { transform: translate(0,0); } to { transform: translate(-480px,-300px); } }
+  @keyframes twinkle { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .nebula { position: absolute; border-radius: 50%; filter: blur(90px); animation: nebulaFloat 22s ease-in-out infinite; }
+  .nebula-1 { width:600px; height:600px; background: radial-gradient(circle, rgba(168,85,247,0.85), transparent 70%); top:-180px; left:-160px; opacity:0.6; }
+  .nebula-2 { width:700px; height:700px; background: radial-gradient(circle, rgba(99,102,241,0.8), transparent 70%); bottom:-240px; right:-200px; animation-delay:-7s; opacity:0.55; }
+  .nebula-3 { width:500px; height:500px; background: radial-gradient(circle, rgba(236,72,153,0.7), transparent 70%); top:35%; left:55%; animation-delay:-14s; opacity:0.45; }
+  @keyframes nebulaFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(60px,-40px) scale(1.15); }
+    66% { transform: translate(-40px,50px) scale(0.9); }
+  }
+  body.light .nebula-1 { opacity:0.5; } body.light .nebula-2 { opacity:0.45; } body.light .nebula-3 { opacity:0.4; }
+  .comet { position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; box-shadow:0 0 6px 2px #fff; opacity:0; pointer-events:none; will-change:transform,opacity; }
+  .comet .tail { position:absolute; top:50%; left:0; height:2px; transform:translateY(-50%); pointer-events:none; background:linear-gradient(90deg,rgba(255,255,255,1),transparent); }
+  body.light .comet { background:#4f46e5; box-shadow:0 0 6px 2px #6366f1; }
+  body.light .comet .tail { background:linear-gradient(90deg,rgba(79,70,229,0.9),transparent); }
+  .space-bg::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 50%,transparent 0%,rgba(0,0,0,0.4) 100%); pointer-events:none; }
+  body.light .space-bg::after { background:radial-gradient(circle at 50% 50%,transparent 0%,rgba(30,30,60,0.15) 100%); }
 
+  .container { width:100%; max-width:780px; position:relative; z-index:1; }
+  .theme-toggle {
+    position:fixed; top:max(20px,env(safe-area-inset-top)); right:max(20px,env(safe-area-inset-right));
+    width:46px; height:46px; border-radius:50%; border:1px solid var(--border);
+    background:var(--panel); backdrop-filter:blur(10px); color:var(--text);
+    font-size:1.3rem; cursor:pointer; z-index:50; transition:transform .2s,box-shadow .2s;
+  }
+  .theme-toggle:hover { transform:rotate(20deg) scale(1.1); box-shadow:0 8px 24px rgba(168,85,247,0.3); }
+  header { text-align:center; margin-bottom:32px; }
+  h1 {
+    font-size:2.4rem; font-weight:800; letter-spacing:-1px;
+    background:linear-gradient(90deg,var(--accent1),var(--accent3),var(--accent2));
+    background-size:200% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    animation:shine 6s linear infinite;
+  }
+  @keyframes shine { to { background-position:200% center; } }
+  .subtitle { color:var(--muted); margin-top:8px; font-size:1rem; }
+  .panel {
+    background:var(--panel); border:1px solid var(--border); border-radius:20px;
+    padding:28px; backdrop-filter:blur(20px); box-shadow:0 20px 60px rgba(0,0,0,0.25);
+    transition:background .4s, border-color .4s;
+  }
+  .label { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:0.85rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .label-right { display:flex; align-items:center; gap:10px; }
+  .counter { font-weight:400; }
+  .counter.warn { color:#f59e0b; } .counter.danger { color:#ef4444; }
+  .clear-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px; transition:color .2s,background .2s; }
+  .clear-btn:hover { color:var(--accent3); background:rgba(236,72,153,0.1); }
+  .ta-wrap { position:relative; }
+  #ghostLayer {
+    position:absolute; inset:0; pointer-events:none; color:var(--muted); opacity:0.65;
+    font-family:inherit; font-size:1rem; line-height:1.5; padding:16px;
+    white-space:pre-wrap; word-wrap:break-word; overflow:hidden; display:none; z-index:2; text-align:left;
+  }
+  textarea {
+    width:100%; min-height:120px; padding:16px; border-radius:14px; border:1px solid var(--border);
+    background:rgba(0,0,0,0.06); color:var(--text); font-size:16px; line-height:1.5;
+    resize:vertical; outline:none; transition:border-color .2s,box-shadow .2s;
+    font-family:inherit; position:relative; z-index:1; caret-color:var(--accent1);
+  }
+  body:not(.light) textarea { background:rgba(0,0,0,0.35); }
+  textarea:focus { border-color:var(--accent1); box-shadow:0 0 0 3px rgba(168,85,247,0.2); }
+  .mic-btn {
+    position:absolute; right:12px; bottom:12px; width:40px; height:40px; border-radius:50%;
+    border:1px solid var(--border); background:var(--panel); backdrop-filter:blur(10px);
+    color:var(--text); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    z-index:3; transition:background .2s,transform .15s;
+  }
+  .mic-btn:hover { transform:scale(1.08); }
+  .mic-btn.listening { background:rgba(239,68,68,0.25); border-color:rgba(239,68,68,0.6); animation:micPulse 1.2s ease-in-out infinite; }
+  @keyframes micPulse { 0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.5); } 50% { box-shadow:0 0 0 12px rgba(239,68,68,0); } }
+
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip {
+    background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text);
+    padding:8px 14px; border-radius:999px; font-size:0.85rem; cursor:pointer; transition:all .2s; font-family:inherit;
+  }
+  body.light .chip { background:rgba(0,0,0,0.04); }
+  .chip:hover { background:linear-gradient(90deg,var(--accent1),var(--accent2)); border-color:transparent; color:#fff; transform:translateY(-2px); box-shadow:0 6px 16px rgba(168,85,247,0.3); }
+  .chip.random { background:rgba(236,72,153,0.12); border-color:rgba(236,72,153,0.35); }
+  .chip.complete { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.35); }
+
+  .btn-row { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .btn {
+    flex:1 1 100%; padding:16px; border:none; border-radius:14px;
+    background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff;
+    font-size:1.05rem; font-weight:700; cursor:pointer; transition:transform .15s,box-shadow .2s;
+    font-family:inherit; position:relative; overflow:hidden;
+  }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 12px 30px rgba(168,85,247,0.45); }
+  .btn:active { transform:translateY(0); }
+  .btn::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent); transition:left .6s; }
+  .btn:hover::after { left:100%; }
+
+  .btn-row-actions { display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .action-btn {
+    flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; padding:12px 6px; border:1px solid var(--border); border-radius:14px;
+    background:rgba(255,255,255,0.06); color:var(--text); font-family:inherit; cursor:pointer;
+    transition:background .2s, transform .15s, border-color .2s;
+    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  }
+  body.light .action-btn { background:rgba(0,0,0,0.04); }
+  .action-btn:hover { background:rgba(168,85,247,0.2); border-color:var(--accent1); transform:translateY(-2px); }
+  .action-btn:active { transform:translateY(0); }
+  .action-btn:disabled { opacity:.5; cursor:wait; }
+  .action-btn .ico { font-size:1.25rem; line-height:1; }
+  .action-btn .lbl { font-size:0.7rem; line-height:1.1; color:var(--muted); text-align:center; white-space:nowrap; }
+  .action-btn:hover .lbl { color:var(--text); }
+  .action-btn.en-btn .ico { font-weight:800; font-size:1rem; letter-spacing:0.5px; }
+  @media (max-width:420px) {
+    .btn-row-actions { flex-wrap:wrap; }
+    .action-btn { flex:1 1 calc(50% - 4px); }
+  }
+  @media (max-width:360px) {
+    .action-btn .lbl { font-size:0.62rem; }
+    .action-btn { padding:10px 4px; }
+  }
+
+  .hint { margin-top:14px; font-size:0.85rem; color:var(--muted); text-align:center; line-height:1.5; }
+  .hint kbd { background:rgba(255,255,255,0.1); border:1px solid var(--border); border-radius:5px; padding:1px 6px; font-size:0.8rem; font-family:monospace; }
+  .history { margin-top:32px; }
+  .history h2 { font-size:1.1rem; margin-bottom:14px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:8px; }
+  .history-list { display:flex; flex-direction:column; gap:10px; }
+  .history-item {
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; transition:border-color .2s,transform .15s; cursor:pointer; animation:slideIn .3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .history-item:hover { border-color:var(--accent1); transform:translateX(4px); }
+  .history-text { flex:1; font-size:0.9rem; color:var(--text); word-break:break-word; line-height:1.4; }
+  .history-actions { display:flex; gap:6px; }
+  .icon-btn {
+    background:rgba(255,255,255,0.08); border:1px solid var(--border); border-radius:8px;
+    width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--muted); font-size:1rem; transition:background .2s,color .2s; touch-action:manipulation;
+  }
+  body.light .icon-btn { background:rgba(0,0,0,0.05); }
+  .icon-btn:hover { background:var(--accent1); color:#fff; }
+  .empty { color:var(--muted); font-size:0.9rem; text-align:center; padding:20px; border:1px dashed var(--border); border-radius:12px; }
+  .toast {
+    position:fixed; bottom:max(24px,env(safe-area-inset-bottom)); left:50%;
+    transform:translateX(-50%) translateY(100px); background:linear-gradient(90deg,var(--accent1),var(--accent2));
+    color:#fff; padding:14px 24px; border-radius:12px; font-weight:600; font-size:0.9rem;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4); transition:transform .3s; z-index:100; max-width:90vw; text-align:center;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .pwa-banner {
+    position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(150%); background:var(--panel);
+    border:1px solid var(--border); border-radius:16px; padding:14px 18px;
+    backdrop-filter:blur(20px); display:flex; align-items:center; gap:12px; z-index:90;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4); transition:transform .3s; max-width:90vw;
+  }
+  .pwa-banner.show { transform:translateX(-50%) translateY(0); }
+  .pwa-banner span { font-size:0.9rem; flex:1; }
+  .pwa-banner button { border:none; border-radius:10px; padding:10px 14px; font-weight:700; font-family:inherit; cursor:pointer; font-size:0.85rem; }
+  .pwa-banner .install { background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; }
+  .pwa-banner .dismiss { background:transparent; color:var(--muted); }
+
+  /* ===== ПАСХАЛКА "БАСЯНЯ": ГИПЕРПРЫЖОК ===== */
+  .hyperspace { position:fixed; inset:0; pointer-events:none; z-index:5; overflow:hidden; display:none; }
+  body.basya-mode .hyperspace { display:block; }
+  body.basya-mode .space-bg {
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(168,85,247,0.85), transparent 55%),
+      radial-gradient(ellipse at 85% 90%, rgba(99,102,241,0.85), transparent 55%),
+      radial-gradient(ellipse at 60% 40%, rgba(236,72,153,0.7), transparent 60%);
+  }
+  body.basya-mode .nebula { opacity:1 !important; filter:blur(60px); }
+  .warp-line {
+    position:absolute; top:50%; left:50%; width:2px; height:2px; background:#fff;
+    border-radius:50%; box-shadow:0 0 8px 2px rgba(255,255,255,0.9);
+    transform-origin:0 0; opacity:0; animation:warpFly 1.2s linear forwards;
+  }
+  @keyframes warpFly {
+    0% { transform:translate(0,0) scale(1); opacity:0; }
+    10% { opacity:1; }
+    100% { transform:translate(var(--dx), var(--dy)) scale(1); opacity:0; }
+  }
+  body.basya-mode h1 { text-shadow:0 0 20px rgba(236,72,153,0.9), 0 0 40px rgba(168,85,247,0.7); }
+  .basya-toast {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.6);
+    background:linear-gradient(90deg, var(--accent3), var(--accent1), var(--accent2));
+    color:#fff; padding:20px 36px; border-radius:20px; font-size:1.5rem; font-weight:800;
+    letter-spacing:1px; box-shadow:0 0 40px rgba(236,72,153,0.7), 0 20px 60px rgba(0,0,0,0.5);
+    opacity:0; pointer-events:none; z-index:120;
+    transition:transform .35s cubic-bezier(.2,1.4,.4,1), opacity .35s; text-align:center;
+  }
+  .basya-toast.show { transform:translate(-50%,-50%) scale(1); opacity:1; }
+  body.basya-mode::before {
+    content:''; position:fixed; inset:0; background:rgba(255,255,255,0.25);
+    z-index:4; pointer-events:none; animation:flash 0.25s ease-out 2;
+  }
+  @keyframes flash { 0% { opacity:0; } 40% { opacity:1; } 100% { opacity:0; } }
+
+  @media (max-width:500px) {
+    h1 { font-size:1.8rem; } .panel { padding:20px; } body { padding:20px 14px; }
+    .chips { gap:6px; } .chip { font-size:0.8rem; padding:7px 12px; }
+    .theme-toggle { width:40px; height:40px; }
+  }
+</style>
+</head>
+<body>
+<div class="space-bg" id="spaceBg">
+  <div class="stars"></div><div class="stars2"></div><div class="stars3"></div>
+  <div class="nebula nebula-1"></div><div class="nebula nebula-2"></div><div class="nebula nebula-3"></div>
+</div>
+<button class="theme-toggle" id="themeToggle" title="Сменить тему">🌙</button>
+<div class="container">
+  <header><h1>✨ Imaginary AI Generator</h1><p class="subtitle">Не просто мысли</p></header>
+  <div class="panel">
+    <div class="label">
+      <span>Твой промпт</span>
+      <div class="label-right">
+        <span class="counter" id="counter">0 / 500</span>
+        <button class="clear-btn" id="clearBtn" title="Очистить">✖</button>
+      </div>
+    </div>
+    <div class="ta-wrap">
+      <textarea id="prompt" maxlength="500" placeholder="Например: кот в космосе"></textarea>
+      <div id="ghostLayer"></div>
+      <button class="mic-btn" id="micBtn" title="Голосовой ввод" type="button">🎤</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="btn-row"><button class="btn" id="btn">🚀 Создать в Imaginary</button></div>
+    <div class="btn-row-actions">
+      <button class="action-btn" id="completeBtn" title="Дописать промпт">
+        <span class="ico">✨</span><span class="lbl">Дописать</span>
+      </button>
+      <button class="action-btn en-btn" id="translateBtn" title="Перевести на английский">
+        <span class="ico">EN</span><span class="lbl">Перевод</span>
+      </button>
+      <button class="action-btn" id="copyBtn" title="Копировать промпт">
+        <span class="ico">📋</span><span class="lbl">Копировать</span>
+      </button>
+      <button class="action-btn" id="shareBtn" title="Поделиться промптом">
+        <span class="ico">📤</span><span class="lbl">Поделиться</span>
+      </button>
+    </div>
+    <p class="hint">
+      <kbd>Ctrl</kbd>+<kbd>Enter</kbd> — создать · <kbd>Ctrl</kbd>+<kbd>Space</kbd> — дописать ·
+      <kbd>Tab</kbd> — принять · <kbd>Esc</kbd> — очистить / отклонить
+    </p>
+  </div>
+  <div class="history">
+    <h2>🕘 История промптов <span id="historyCount" style="font-weight:400;">(0)</span></h2>
+    <div class="history-list" id="historyList"><div class="empty">Пока пусто — сгенерируй первую картинку</div></div>
+  </div>
+</div>
+<div class="toast" id="toast">Промпт скопирован!</div>
+<div class="pwa-banner" id="pwaBanner">
+  <span>Установить приложение?</span>
+  <button class="install" id="pwaInstall">Установить</button>
+  <button class="dismiss" id="pwaDismiss">✖</button>
+</div>
+<div class="hyperspace" id="hyperspace"></div>
+<div class="basya-toast" id="basyaToast">Басяня, поехали! 🚀</div>
+<script>
+  const promptEl = document.getElementById('prompt');
+  const btn = document.getElementById('btn');
+  const copyBtn = document.getElementById('copyBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const completeBtn = document.getElementById('completeBtn');
+  const translateBtn = document.getElementById('translateBtn');
+  const micBtn = document.getElementById('micBtn');
+  const counter = document.getElementById('counter');
+  const clearBtn = document.getElementById('clearBtn');
+  const chipsEl = document.getElementById('chips');
+  const historyList = document.getElementById('historyList');
+  const historyCount = document.getElementById('historyCount');
+  const toast = document.getElementById('toast');
+  const themeToggle = document.getElementById('themeToggle');
+  const spaceBg = document.getElementById('spaceBg');
+  const ghostLayer = document.getElementById('ghostLayer');
+  const pwaBanner = document.getElementById('pwaBanner');
+  const pwaInstall = document.getElementById('pwaInstall');
+  const pwaDismiss = document.getElementById('pwaDismiss');
+
+  const STORAGE_KEY = 'ai_prompts_history';
+  const DRAFT_KEY = 'ai_prompt_draft';
+  const THEME_KEY = 'ai_theme';
+
+  const TEMPLATES = {
+    'Портрет': 'portrait of a young woman, natural light, soft focus, photorealistic, 8k',
+    'Пейзаж': 'mountain landscape at sunset, dramatic sky, cinematic lighting, ultra detailed',
+    'Кухня': 'modern kitchen with beige cabinets, grey floor, red accent wall, warm lighting, photorealistic interior',
+    'Космос': 'astronaut floating in space, nebula, stars, cinematic, photorealistic, 8k',
+    'Животные': 'cute golden retriever puppy, fluffy fur, big eyes, soft sunlight, professional pet photography',
+    'Фэнтези': 'ancient dragon over a magical castle, glowing runes, epic fantasy art, highly detailed'
+  };
+
+  function systemTheme() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.body.classList.add('light'); themeToggle.textContent = '☀️';
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#dde3ff');
+    } else {
+      document.body.classList.remove('light'); themeToggle.textContent = '🌙';
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#05050c');
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }
+  applyTheme(localStorage.getItem(THEME_KEY) || systemTheme());
+  themeToggle.addEventListener('click', () => {
+    applyTheme(document.body.classList.contains('light') ? 'dark' : 'light');
+  });
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if (!localStorage.getItem(THEME_KEY)) applyTheme(systemTheme());
+    });
+  }
+
+  function updateCounter() {
+    const len = promptEl.value.length;
+    counter.textContent = `${len} / 500`;
+    counter.classList.toggle('warn', len >= 450 && len < 500);
+    counter.classList.toggle('danger', len >= 500);
+  }
+
+  let acAbort = null;
+  let acDebounceTimer = null;
+  let ghostSuffix = '';
+  let ghostActive = false;
+
+  function renderGhost() {
+    if (!ghostActive || !ghostSuffix) {
+      ghostLayer.style.display = 'none';
+      ghostLayer.textContent = '';
+      return;
+    }
+    ghostLayer.textContent = promptEl.value + ghostSuffix;
+    ghostLayer.style.display = 'block';
+    ghostLayer.scrollTop = promptEl.scrollTop;
+    ghostLayer.scrollLeft = promptEl.scrollLeft;
+  }
+  function showGhost(suffix) { ghostSuffix = suffix || ''; ghostActive = !!ghostSuffix; renderGhost(); }
+  function dismissGhost() { ghostSuffix = ''; ghostActive = false; renderGhost(); }
+  function acceptGhost() {
+    if (!ghostActive || !ghostSuffix) return false;
+    promptEl.value = promptEl.value + ghostSuffix;
+    updateCounter();
+    localStorage.setItem(DRAFT_KEY, promptEl.value);
+    dismissGhost();
+    promptEl.focus();
+    showToast('Дописано ✨');
+    return true;
+  }
+  function scheduleAutoComplete() {
+    if (acDebounceTimer) clearTimeout(acDebounceTimer);
+    acDebounceTimer = setTimeout(() => autoComplete({ silent: true }), 700);
+  }
+
+  promptEl.addEventListener('input', () => {
+    updateCounter();
+    localStorage.setItem(DRAFT_KEY, promptEl.value);
+    dismissGhost();
+    scheduleAutoComplete();
+  });
+
+  const draft = localStorage.getItem(DRAFT_KEY);
+  if (draft) { promptEl.value = draft; updateCounter(); }
+
+  clearBtn.addEventListener('click', () => {
+    promptEl.value = ''; updateCounter(); localStorage.removeItem(DRAFT_KEY);
+    dismissGhost(); promptEl.focus();
+  });
+
+  function showToast(text) {
+    toast.textContent = text; toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null; let listening = false;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU'; recognition.continuous = false;
+    recognition.interimResults = true; recognition.maxAlternatives = 1;
+    let baseBeforeMic = '';
+    recognition.addEventListener('start', () => {
+      listening = true; micBtn.classList.add('listening');
+      baseBeforeMic = promptEl.value; showToast('Говори…');
+    });
+    recognition.addEventListener('result', (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t; else interim += t;
+      }
+      const spoken = final || interim;
+      if (spoken) {
+        const sep = baseBeforeMic && !/\s$/.test(baseBeforeMic) ? ' ' : '';
+        promptEl.value = (baseBeforeMic + sep + spoken).slice(0, 500);
+        updateCounter(); localStorage.setItem(DRAFT_KEY, promptEl.value); dismissGhost();
+      }
+    });
+    recognition.addEventListener('end', () => { listening = false; micBtn.classList.remove('listening'); });
+    recognition.addEventListener('error', (e) => {
+      listening = false; micBtn.classList.remove('listening');
+      if (e.error === 'not-allowed') showToast('Нет доступа к микрофону');
+      else if (e.error === 'no-speech') showToast('Речь не распознана');
+      else showToast('Ошибка голосового ввода');
+    });
+    micBtn.addEventListener('click', () => {
+      if (listening) { recognition.stop(); return; }
+      if (promptEl.value.length >= 500) { showToast('Достигнут лимит 500 символов'); return; }
+      try { recognition.start(); } catch { /* уже запущен */ }
+    });
+  } else { micBtn.style.display = 'none'; }
+
+  async function sharePrompt() {
+    const text = promptEl.value.trim();
+    if (!text) { showToast('Напиши промпт!'); return; }
+    const url = location.origin + location.pathname + '?p=' + encodeURIComponent(text);
+    const shareData = { title: 'Imaginary AI Generator', text: 'Мой промпт:\n' + text, url };
+    if (navigator.share) {
+      try { await navigator.share(shareData); showToast('Поделился!'); }
+      catch (err) {
+        if (err.name === 'AbortError') return;
+        try { await navigator.clipboard.writeText(url); showToast('Ссылка скопирована!'); }
+        catch { showToast('Не удалось поделиться'); }
+      }
+    } else {
+      try { await navigator.clipboard.writeText(url); showToast('Ссылка скопирована!'); }
+      catch { showToast('Не удалось скопировать'); }
+    }
+  }
+  shareBtn.addEventListener('click', sharePrompt);
+
+  let translating = false;
+  async function translateToEnglish() {
+    const text = promptEl.value.trim();
+    if (!text) { showToast('Напиши промпт для перевода'); return; }
+    if (translating) return;
+    const cyrillic = /[а-яё]/i.test(text);
+    if (!cyrillic) { showToast('Текст уже на английском'); return; }
+
+    translating = true;
+    translateBtn.disabled = true;
+    const icoEl = translateBtn.querySelector('.ico');
+    const prevIcon = icoEl ? icoEl.textContent : 'EN';
+    if (icoEl) icoEl.textContent = '⏳';
+
+    try {
+      const url = 'https://api.mymemory.translated.net/get?q=' +
+        encodeURIComponent(text) + '&langpair=ru|en';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      let translated = (data && data.responseData && data.responseData.translatedText) || '';
+      translated = translated.trim();
+      if (!translated || /[а-яё]/i.test(translated)) throw new Error('bad translation');
+      translated = translated.slice(0, 500);
+      promptEl.value = translated;
+      updateCounter();
+      localStorage.setItem(DRAFT_KEY, translated);
+      dismissGhost();
+      showToast('Переведено на английский 🇬🇧');
+    } catch (err) {
+      showToast('Перевод не удался. Попробуй ещё раз.');
+    } finally {
+      translating = false;
+      translateBtn.disabled = false;
+      if (icoEl) icoEl.textContent = prevIcon || 'EN';
+    }
+  }
+  translateBtn.addEventListener('click', translateToEnglish);
+
+  function renderChips() {
+    Object.entries(TEMPLATES).forEach(([name, text]) => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = name;
+      chip.onclick = () => {
+        promptEl.value = text;
+        updateCounter();
+        localStorage.setItem(DRAFT_KEY, text);
+        dismissGhost();
+        promptEl.focus();
+      };
+      chipsEl.appendChild(chip);
+    });
+
+    const randomChip = document.createElement('button');
+    randomChip.className = 'chip random';
+    randomChip.textContent = '🎲 Случайный';
+    randomChip.onclick = () => {
+      const keys = Object.keys(TEMPLATES);
+      const key = keys[Math.floor(Math.random() * keys.length)];
+      const text = TEMPLATES[key];
+      promptEl.value = text;
+      updateCounter();
+      localStorage.setItem(DRAFT_KEY, text);
+      dismissGhost();
+      showToast(`Шаблон: ${key}`);
+    };
+    chipsEl.appendChild(randomChip);
+
+    const compChip = document.createElement('button');
+    compChip.className = 'chip complete';
+    compChip.textContent = '✨ Дописать';
+    compChip.onclick = () => autoComplete({ silent: false });
+    chipsEl.appendChild(compChip);
+  }
+
+  function loadHistory() {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    historyCount.textContent = `(${data.length})`;
+    if (!data.length) {
+      historyList.innerHTML = '<div class="empty">Пока пусто — сгенерируй первую картинку</div>';
+      return;
+    }
+    historyList.innerHTML = '';
+    data.forEach((text, i) => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+
+      const textEl = document.createElement('div');
+      textEl.className = 'history-text';
+      textEl.textContent = text;
+
+      const actions = document.createElement('div');
+      actions.className = 'history-actions';
+
+      const copyBtnH = document.createElement('button');
+      copyBtnH.className = 'icon-btn';
+      copyBtnH.textContent = '📋';
+      copyBtnH.title = 'Скопировать';
+      copyBtnH.onclick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        showToast('Скопировано!');
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn';
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Удалить';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        arr.splice(i, 1);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+        loadHistory();
+      };
+
+      actions.appendChild(copyBtnH);
+      actions.appendChild(delBtn);
+      item.appendChild(textEl);
+      item.appendChild(actions);
+
+      item.onclick = () => {
+        promptEl.value = text;
+        updateCounter();
+        localStorage.setItem(DRAFT_KEY, text);
+        dismissGhost();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      item.ondblclick = () => {
+        navigator.clipboard.writeText(text);
+        showToast('Скопировано!');
+      };
+      historyList.appendChild(item);
+    });
+  }
+
+  function savePrompt(text) {
+    const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const filtered = arr.filter(x => x !== text);
+    filtered.unshift(text);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.slice(0, 50)));
+    loadHistory();
+  }
+
+  function generate() {
+    const text = promptEl.value.trim();
+    if (!text) { showToast('Напиши промпт!'); return; }
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Промпт скопирован! Открываю GLM-Image...');
+    }).catch(() => {
+      showToast('Открываю GLM-Image. Скопируй промпт вручную.');
+    });
+    savePrompt(text);
+    window.open('https://image.z.ai', '_blank');
+  }
+  btn.addEventListener('click', generate);
+
+  copyBtn.addEventListener('click', () => {
+    const text = promptEl.value.trim();
+    if (!text) { showToast('Нечего копировать'); return; }
+    navigator.clipboard.writeText(text);
+    showToast('Промпт скопирован!');
+  });
+
+  promptEl.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); generate(); }
+    if (e.ctrlKey && e.code === 'Space') { e.preventDefault(); autoComplete({ silent: false }); }
+    if (e.key === 'Tab' && ghostActive) { e.preventDefault(); acceptGhost(); }
+    if (e.key === 'Escape') {
+      if (ghostActive) { e.preventDefault(); dismissGhost(); return; }
+      promptEl.value = ''; updateCounter(); localStorage.removeItem(DRAFT_KEY);
+    }
+  });
+
+  promptEl.addEventListener('scroll', () => {
+    if (ghostActive) {
+      ghostLayer.scrollTop = promptEl.scrollTop;
+      ghostLayer.scrollLeft = promptEl.scrollLeft;
+    }
+  });
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('p')) {
+    promptEl.value = params.get('p').slice(0, 500);
+    updateCounter();
+    showToast('Промпт загружен из ссылки!');
+  }
+
+  async function autoComplete({ silent = false } = {}) {
+    const base = promptEl.value;
+    const trimmed = base.trim();
+    if (!trimmed) { if (!silent) showToast('Сначала напиши хотя бы пару слов'); return; }
+    if (trimmed.length < 3) { if (!silent) showToast('Слишком коротко для дописывания'); return; }
+    if (acAbort) acAbort.abort();
+    acAbort = new AbortController();
+    const signal = acAbort.signal;
+
+    completeBtn.disabled = true;
+    const icoEl = completeBtn.querySelector('.ico');
+    const prevIcon = icoEl ? icoEl.textContent : '✨';
+    if (icoEl) icoEl.textContent = '⏳';
+
+    try {
+      const completion = await getCompletion(base, signal);
+      if (signal.aborted) return;
+      let clean = (completion || '').trim();
+      if (clean.startsWith(base)) clean = clean.slice(base.length);
+      clean = clean.replace(/^\s+/, '');
+      if (!clean) { if (!silent) showToast('Нечего дописывать'); return; }
+      const room = 500 - promptEl.value.length;
+      if (room <= 0) { if (!silent) showToast('Достигнут лимит 500 символов'); return; }
+      showGhost(clean.slice(0, room));
+      if (!silent) showToast('Tab — принять подсказку');
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      if (!silent) showToast('Ошибка дописывания');
+    } finally {
+      completeBtn.disabled = false;
+      if (icoEl) icoEl.textContent = prevIcon || '✨';
+    }
+  }
+
+  async function getCompletion(text, signal) {
+    const lower = text.toLowerCase();
+    const TAILS = [
+      ', cinematic lighting, ultra detailed, 8k, photorealistic',
+      ', dramatic sky, volumetric light, sharp focus, high detail',
+      ', soft natural light, shallow depth of field, professional photography',
+      ', epic fantasy art, glowing runes, highly detailed, masterpiece',
+      ', neon accents, cyberpunk atmosphere, rain reflections, 4k'
+    ];
+    const KEYWORDS = {
+      'кот': ', fluffy fur, big eyes, soft sunlight, professional pet photography',
+      'cat': ', fluffy fur, big eyes, soft sunlight, professional pet photography',
+      'космос': ', nebula, stars, cinematic, photorealistic, 8k',
+      'space': ', nebula, stars, cinematic, photorealistic, 8k',
+      'дракон': ', ancient dragon, glowing runes, epic fantasy art, highly detailed',
+      'dragon': ', ancient dragon, glowing runes, epic fantasy art, highly detailed',
+      'пейзаж': ', dramatic sky, cinematic lighting, ultra detailed',
+      'landscape': ', dramatic sky, cinematic lighting, ultra detailed',
+      'портрет': ', natural light, soft focus, photorealistic, 8k',
+      'portrait': ', natural light, soft focus, photorealistic, 8k'
+    };
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(resolve, 350 + Math.random() * 400);
+      signal.addEventListener('abort', () => {
+        clearTimeout(t);
+        reject(new DOMException('Aborted', 'AbortError'));
+      }, { once: true });
+    });
+    for (const key of Object.keys(KEYWORDS)) {
+      if (lower.includes(key)) return KEYWORDS[key];
+    }
+    return TAILS[Math.floor(Math.random() * TAILS.length)];
+  }
+  completeBtn.addEventListener('click', () => autoComplete({ silent: false }));
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (localStorage.getItem('pwa_dismissed') === '1') return;
+    pwaBanner.classList.add('show');
+  });
+  pwaInstall.addEventListener('click', async () => {
+    pwaBanner.classList.remove('show');
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  });
+  pwaDismiss.addEventListener('click', () => {
+    pwaBanner.classList.remove('show');
+    localStorage.setItem('pwa_dismissed', '1');
+  });
+
+  function spawnComet() {
+    const comet = document.createElement('div');
+    comet.className = 'comet';
+    const edge = Math.random();
+    let startX, startY;
+    if (edge < 0.5) { startX = Math.random() * 100; startY = -5; }
+    else { startX = Math.random() < 0.5 ? -5 : 105; startY = Math.random() * 60; }
+    const direction = startX > 50 ? -1 : 1;
+    const angleDeg = (20 + Math.random() * 50) * direction;
+    const tailLength = 60 + Math.random() * 120;
+    const duration = 2.5 + Math.random() * 3.5;
+    comet.style.left = startX + '%';
+    comet.style.top = startY + '%';
+    const tail = document.createElement('div');
+    tail.className = 'tail';
+    tail.style.width = tailLength + 'px';
+    comet.appendChild(tail);
+    spaceBg.appendChild(comet);
+    const dx = Math.cos((angleDeg * Math.PI) / 180) * 700;
+    const dy = Math.sin((angleDeg * Math.PI) / 180) * 700;
+    const anim = comet.animate([
+      { transform: `translate(0, 0) rotate(${angleDeg}deg)`, opacity: 0, offset: 0 },
+      { opacity: 1, offset: 0.1 },
+      { opacity: 1, offset: 0.6 },
+      { transform: `translate(${dx}px, ${dy}px) rotate(${angleDeg}deg)`, opacity: 0, offset: 1 }
+    ], { duration: duration * 1000, easing: 'linear', fill: 'forwards' });
+    anim.onfinish = () => comet.remove();
+    setTimeout(() => comet.remove(), duration * 1000 + 500);
+  }
+  function scheduleComets() {
+    const delay = 800 + Math.random() * 2500;
+    setTimeout(() => {
+      spawnComet();
+      if (Math.random() < 0.3) setTimeout(spawnComet, 200 + Math.random() * 400);
+      scheduleComets();
+    }, delay);
+  }
+
+  // ============================================================
+  // ===== ПАСХАЛКА "БАСЯНЯ" ====================================
+  // ============================================================
+  const MAGIC_WORD = 'басяня';
+  const hyperspace = document.getElementById('hyperspace');
+  const basyaToast = document.getElementById('basyaToast');
+  let basyaMode = false;
+  let basyaTimer = null;
+  let typedBuffer = '';
+
+  function spawnWarpLine() {
+    const line = document.createElement('div');
+    line.className = 'warp-line';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 600 + Math.random() * 700;
+    line.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    line.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+    line.style.left = '50%';
+    line.style.top = '50%';
+    line.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+    hyperspace.appendChild(line);
+    setTimeout(() => line.remove(), 1600);
+  }
+
+  function activateBasya() {
+    if (basyaMode) return;
+    basyaMode = true;
+    document.body.classList.add('basya-mode');
+    basyaToast.classList.add('show');
+
+    let burstCount = 0;
+    const burst = setInterval(() => {
+      if (!basyaMode) { clearInterval(burst); return; }
+      for (let i = 0; i < 25; i++) {
+        setTimeout(spawnWarpLine, i * 8);
+      }
+      burstCount++;
+      if (burstCount >= 3) clearInterval(burst);
+    }, 350);
+
+    setTimeout(() => basyaToast.classList.remove('show'), 3000);
+
+    clearTimeout(basyaTimer);
+    basyaTimer = setTimeout(() => {
+      basyaMode = false;
+      document.body.classList.remove('basya-mode');
+      basyaToast.classList.remove('show');
+      hyperspace.innerHTML = '';
+    }, 6000);
+  }
+
+  promptEl.addEventListener('input', () => {
+    if (promptEl.value.toLowerCase().includes(MAGIC_WORD)) {
+      activateBasya();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (document.activeElement === promptEl) return;
+    if (e.key.length === 1) {
+      typedBuffer = (typedBuffer + e.key.toLowerCase()).slice(-MAGIC_WORD.length);
+      if (typedBuffer === MAGIC_WORD) {
+        typedBuffer = '';
+        activateBasya();
+      }
+    }
+  });
+
+  let basyaTaps = 0;
+  let basyaTapTimer = null;
+  document.querySelector('h1').addEventListener('click', () => {
+    basyaTaps++;
+    clearTimeout(basyaTapTimer);
+    basyaTapTimer = setTimeout(() => { basyaTaps = 0; }, 1500);
+    if (basyaTaps >= 5) {
+      basyaTaps = 0;
+      activateBasya();
+    }
+  });
+
+  // ===== Старт =====
+  renderChips();
+  loadHistory();
+  scheduleComets();
+</script>
+</body>
+</html>
