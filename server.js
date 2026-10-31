@@ -5,8 +5,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
+// Отдаём статику из папки public (index.html, manifest.json, sw.js, иконки)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Явно отдаём главную страницу
+app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+});
+
+// Генерация картинки через Together AI
 app.post('/api/generate', async (req, res) => {
     const { prompt } = req.body;
 
@@ -14,9 +22,6 @@ app.post('/api/generate', async (req, res) => {
         return res.status(400).json({ error: 'Промпт не может быть пустым' });
     }
 
-    // Ключ берётся из переменной окружения TOGETHER_API_KEY,
-    // которую ты задаёшь в настройках Render (Environment → Add Environment Variable).
-    // В код его вставлять НЕЛЬЗЯ — иначе он утечёт на GitHub.
     if (!process.env.TOGETHER_API_KEY) {
         return res.status(500).json({ error: 'Сервер не настроен: отсутствует TOGETHER_API_KEY' });
     }
@@ -42,6 +47,7 @@ app.post('/api/generate', async (req, res) => {
         if (!response.ok) {
             const errText = await response.text();
             console.error('Together Error:', response.status, errText);
+
             if (response.status === 429) {
                 return res.status(429).json({ error: 'Слишком частые запросы. Подожди 10 секунд и попробуй снова.' });
             }
@@ -67,6 +73,6 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Сервер запущен: http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
