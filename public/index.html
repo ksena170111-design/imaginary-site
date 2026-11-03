@@ -263,7 +263,7 @@
   .pwa-banner .install { background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; }
   .pwa-banner .dismiss { background:transparent; color:var(--muted); }
 
-  /* ===== ПАСХАЛКА "БАСЯНЯ": ГИПЕРПРЫЖОК ===== */
+  /* ПАСХАЛКА "БАСЯНЯ" */
   .hyperspace { position:fixed; inset:0; pointer-events:none; z-index:5; overflow:hidden; display:none; }
   body.basya-mode .hyperspace { display:block; }
   body.basya-mode .space-bg {
@@ -382,6 +382,7 @@
   const pwaBanner = document.getElementById('pwaBanner');
   const pwaInstall = document.getElementById('pwaInstall');
   const pwaDismiss = document.getElementById('pwaDismiss');
+  const acceptBtn = document.getElementById('acceptBtn');
 
   const STORAGE_KEY = 'ai_prompts_history';
   const DRAFT_KEY = 'ai_prompt_draft';
@@ -446,14 +447,12 @@
     ghostSuffix = suffix || '';
     ghostActive = !!ghostSuffix;
     renderGhost();
-    const acceptBtn = document.getElementById('acceptBtn');
     if (acceptBtn) acceptBtn.classList.toggle('show', ghostActive);
   }
   function dismissGhost() {
     ghostSuffix = '';
     ghostActive = false;
     renderGhost();
-    const acceptBtn = document.getElementById('acceptBtn');
     if (acceptBtn) acceptBtn.classList.remove('show');
   }
   function acceptGhost() {
@@ -813,7 +812,6 @@
     }
   });
 
-  const acceptBtn = document.getElementById('acceptBtn');
   if (acceptBtn) {
     acceptBtn.addEventListener('click', () => {
       acceptGhost();
@@ -966,4 +964,4 @@
   scheduleComets();
 </script>
 </body>
-</html>
+</html>ы
